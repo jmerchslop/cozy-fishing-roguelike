@@ -26,6 +26,7 @@ func _run() -> void:
 	_test_quota_growth(Rules)
 	_test_day_end(Rules)
 	_test_fish_rolls(Rules)
+	_test_difficulty_ramp(Rules)
 
 
 func expect(ok: bool, message: String) -> void:
@@ -127,3 +128,65 @@ func _test_fish_rolls(Rules: GDScript) -> void:
 	if str(again["name"]) == "Not A Fish" or int(again["value"]) < 0:
 		still_valid = false
 	expect(still_valid, "a rolled fish is a copy, so editing it leaves the table alone")
+
+
+func _test_difficulty_ramp(Rules: GDScript) -> void:
+	expect(is_equal_approx(Rules.DAY_LENGTH, 45.0), "a day lasts 45 seconds")
+
+	expect(
+		is_equal_approx(Rules.marker_speed_for_day(1), Rules.MARKER_SPEED_START),
+		"day 1 uses the starting marker speed"
+	)
+	expect(
+		is_equal_approx(Rules.green_width_for_day(1), Rules.GREEN_WIDTH_START),
+		"day 1 uses the starting green zone"
+	)
+
+	# The first few days should take the small step, not jump straight to the cap.
+	var early_days_ok := true
+	for day in range(1, 5):
+		var speed_now: float = Rules.marker_speed_for_day(day)
+		var speed_next: float = Rules.marker_speed_for_day(day + 1)
+		var width_now: float = Rules.green_width_for_day(day)
+		var width_next: float = Rules.green_width_for_day(day + 1)
+		if not is_equal_approx(speed_next, speed_now + Rules.MARKER_SPEED_PER_DAY):
+			early_days_ok = false
+		if not is_equal_approx(width_next, width_now - Rules.GREEN_WIDTH_PER_DAY):
+			early_days_ok = false
+		if speed_next <= speed_now or width_next >= width_now:
+			early_days_ok = false
+	expect(early_days_ok, "each early day speeds the marker up a little and shrinks the green zone a little")
+
+	expect(
+		is_equal_approx(Rules.marker_speed_for_day(40), Rules.MARKER_SPEED_MAX),
+		"marker speed stops at its cap"
+	)
+	expect(
+		is_equal_approx(Rules.green_width_for_day(40), Rules.GREEN_WIDTH_MIN),
+		"the green zone stops shrinking at its floor"
+	)
+	expect(
+		Rules.marker_speed_for_day(40) >= Rules.marker_speed_for_day(1),
+		"the speed cap is not slower than day 1"
+	)
+	expect(
+		Rules.green_width_for_day(40) <= Rules.green_width_for_day(1),
+		"the zone floor is not wider than day 1"
+	)
+
+	expect(
+		is_equal_approx(Rules.marker_speed_for_day(0), Rules.marker_speed_for_day(1)),
+		"day 0 uses the day 1 marker speed"
+	)
+	expect(
+		is_equal_approx(Rules.green_width_for_day(-2), Rules.green_width_for_day(1)),
+		"a negative day uses the day 1 green zone"
+	)
+
+	# Window length is zone width divided by marker speed: how long the
+	# marker actually sits inside the green.
+	var day_one_window: float = Rules.green_width_for_day(1) / Rules.marker_speed_for_day(1)
+	var hardest_window: float = Rules.GREEN_WIDTH_MIN / Rules.MARKER_SPEED_MAX
+	expect(day_one_window < 0.16, "day 1 leaves the marker in the green for under 0.16 seconds")
+	expect(hardest_window >= 0.05, "the hardest day still leaves at least 0.05 seconds of green")
+	expect(hardest_window <= day_one_window, "later days are not easier than day 1")

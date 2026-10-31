@@ -1,21 +1,53 @@
 class_name GameRules
 extends RefCounted
 
-## Cash, fish, and the day-end check.
+## Cash, fish, the day clock, and how hard the timing bar is.
 ##
 ## This file does not draw anything and does not read the keyboard.
 ## The fishing scene asks it questions ("what is today's quota?",
-## "which fish did we catch?", "did the player make enough money?").
+## "which fish did we catch?", "how fast is the marker today?").
 ## The test script asks the same questions, with no game window open.
+##
+## The numbers below are the knobs. Change them here when a day feels
+## too easy or too harsh.
 
-## One day lasts one minute, so you can feel a full day quickly.
-const DAY_LENGTH := 60.0
+## How long one day lasts, in seconds.
+const DAY_LENGTH := 45.0
 
 ## Cash the player must earn on day 1.
 const STARTING_QUOTA := 80
 
 ## Added to the quota every time a day is cleared.
 const QUOTA_INCREASE := 50
+
+## How long the line sits in the water before a bite, in seconds.
+## The scene picks a random wait between these two. Longer waits mean fewer casts.
+const BITE_WAIT_MIN := 0.6
+const BITE_WAIT_MAX := 1.8
+
+## How long the "caught it" or "it got away" line stays up.
+## The day clock keeps running during this pause.
+const RESULT_PAUSE := 0.8
+
+## Marker speed on day 1: the fraction of the bar it covers in one second.
+## Above 1 means it crosses the whole bar in less than a second.
+const MARKER_SPEED_START := 1.15
+
+## Added to the marker speed at the start of each later day.
+const MARKER_SPEED_PER_DAY := 0.05
+
+## Speed cap. Past this the marker would be a blur, so it stops rising.
+const MARKER_SPEED_MAX := 1.35
+
+## Green catch zone on day 1, as a fraction of the bar.
+## 0.12 is a thin slice, about one eighth of the bar.
+const GREEN_WIDTH_START := 0.12
+
+## Taken off the green zone at the start of each later day.
+const GREEN_WIDTH_PER_DAY := 0.006
+
+## Thinnest the zone is allowed to get. Still a real target, not a pixel.
+const GREEN_WIDTH_MIN := 0.09
 
 ## The whole fish table.
 ## weight is how many tickets that fish has in the draw.
@@ -34,6 +66,20 @@ const FISH := [
 static func quota_for_day(day: int) -> int:
 	var safe_day := maxi(day, 1)
 	return STARTING_QUOTA + (safe_day - 1) * QUOTA_INCREASE
+
+
+## How fast the marker moves on this day. Rises a little each day, then stops at the cap.
+static func marker_speed_for_day(day: int) -> float:
+	var safe_day := maxi(day, 1)
+	var speed := MARKER_SPEED_START + float(safe_day - 1) * MARKER_SPEED_PER_DAY
+	return minf(speed, MARKER_SPEED_MAX)
+
+
+## How wide the green zone is on this day. Shrinks a little each day, then stops at the floor.
+static func green_width_for_day(day: int) -> float:
+	var safe_day := maxi(day, 1)
+	var width := GREEN_WIDTH_START - float(safe_day - 1) * GREEN_WIDTH_PER_DAY
+	return maxf(width, GREEN_WIDTH_MIN)
 
 
 ## The day-end rule. Meeting the quota exactly is a win.

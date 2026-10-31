@@ -1,6 +1,6 @@
 # Cozy Fishing Roguelike
 
-A small fishing game made in Godot 4. Each day lasts about a minute. Catch fish, earn cash, and meet the day's quota. Clear it and the next day asks for more. Miss it and the run ends.
+A small fishing game made in Godot 4. Each day lasts 45 seconds. Catch fish, earn cash, and meet the day's quota. Clear it and the next day asks for more. Miss it and the run ends.
 
 The picture is made of plain colored shapes. There is no art pack and no sound.
 
@@ -19,7 +19,7 @@ The game window is a small dock over the water. The cream panel in the corner is
 
 - **Space** or **click** casts the line.
 - After a short wait, a fish bites and a bar appears.
-- A marker slides back and forth. Press **Space** or **click** while it is in the green zone.
+- A marker slides back and forth. Press **Space** or **click** while it is in the green zone. The zone is thin and the marker is quick. Each new day the marker speeds up a little and the zone shrinks a little, until both hit a limit so a catch is still possible.
 - Hit the green and you keep a random fish. Its price is added to **Caught today**. Miss, and it gets away.
 - You can let the marker bounce and wait for the next pass. The day clock keeps ticking while you wait.
 - When **Time left** hits 0:
@@ -72,4 +72,4 @@ If you have the Godot binary on your PATH:
 godot --headless --path . --script res://tests/run_tests.gd
 ```
 
-You should see a line of `PASS` results and then `ALL TESTS PASSED`. The tests cover three things: the quota goes up each day, a day passes only when the cash meets the quota, and a rolled fish is always one of the fish in the table.
+You should see a line of `PASS` results and then `ALL TESTS PASSED`. The tests cover the quota going up each day, a day passing only when the cash meets the quota, fish rolls staying inside the table, and the timing bar getting a little harder each day without becoming impossible.

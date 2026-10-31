@@ -12,12 +12,6 @@ enum Phase { READY, WAITING, BITE, RESULT, DAY_CLEAR, GAME_OVER }
 
 const Rules := preload("res://scripts/game_rules.gd")
 
-# Fraction of the bar the marker travels in one second.
-const MARKER_SPEED := 0.7
-# Fraction of the bar that counts as a catch. 0.2 is one fifth of the bar.
-const GREEN_WIDTH := 0.2
-# How long the "caught it" / "got away" line stays up.
-const RESULT_PAUSE := 0.8
 # How long "Day cleared" stays up before the next day starts on its own.
 const DAY_CLEAR_PAUSE := 2.2
 # Where the fishing line is tied, at the end of the dock.
@@ -50,6 +44,9 @@ var bobber_home := Vector2.ZERO
 var marker_t: float = 0.0
 var marker_dir: int = 1
 var green_start: float = 0.4
+# Copied from game_rules at the start of each day, so the bar can get harder.
+var marker_speed: float = 0.0
+var green_width: float = 0.0
 
 
 func _ready() -> void:
@@ -68,6 +65,8 @@ func _begin_day() -> void:
 	cash = 0
 	quota = Rules.quota_for_day(day)
 	time_left = Rules.DAY_LENGTH
+	marker_speed = Rules.marker_speed_for_day(day)
+	green_width = Rules.green_width_for_day(day)
 	_go_ready()
 
 
@@ -162,7 +161,7 @@ func _go_ready() -> void:
 
 func _cast() -> void:
 	phase = Phase.WAITING
-	phase_timer = randf_range(0.6, 1.8)
+	phase_timer = randf_range(Rules.BITE_WAIT_MIN, Rules.BITE_WAIT_MAX)
 	bob_time = 0.0
 	bobber.position = bobber_home
 	bobber.visible = true
@@ -177,7 +176,7 @@ func _start_bite() -> void:
 	marker_t = 0.0
 	marker_dir = 1
 	# Keep the whole green zone on the bar, with a small margin at each end.
-	green_start = randf_range(0.02, 1.0 - GREEN_WIDTH - 0.02)
+	green_start = randf_range(0.02, 1.0 - green_width - 0.02)
 	minigame.visible = true
 	_layout_bar()
 	status_label.text = "Bite! Press Space when the marker is in the green"
@@ -186,7 +185,7 @@ func _start_bite() -> void:
 
 func _resolve_bite() -> void:
 	phase = Phase.RESULT
-	phase_timer = RESULT_PAUSE
+	phase_timer = Rules.RESULT_PAUSE
 	_hide_tackle()
 
 	if _marker_in_green():
@@ -233,7 +232,7 @@ func _sync_line() -> void:
 
 
 func _move_marker(delta: float) -> void:
-	marker_t += marker_dir * MARKER_SPEED * delta
+	marker_t += marker_dir * marker_speed * delta
 	if marker_t >= 1.0:
 		marker_t = 1.0
 		marker_dir = -1
@@ -246,13 +245,13 @@ func _move_marker(delta: float) -> void:
 func _layout_bar() -> void:
 	var width := bar.size.x
 	green_zone.position = Vector2(green_start * width, 0.0)
-	green_zone.size = Vector2(GREEN_WIDTH * width, bar.size.y)
+	green_zone.size = Vector2(green_width * width, bar.size.y)
 	var marker_x := marker_t * width - marker.size.x * 0.5
 	marker.position = Vector2(marker_x, (bar.size.y - marker.size.y) * 0.5)
 
 
 func _marker_in_green() -> bool:
-	return marker_t >= green_start and marker_t <= green_start + GREEN_WIDTH
+	return marker_t >= green_start and marker_t <= green_start + green_width
 
 
 func _hide_tackle() -> void:
