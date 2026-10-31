@@ -1,0 +1,18 @@
+# Godot rebuilds this folder the first time you open the project.
+# It is a cache. Do not commit it.
+.godot/
+
+# Binary translation files Godot generates from CSV files.
+*.translation
+
+# Android export output, if you ever export for Android.
+/android/
+
+# Folders for exported game builds.
+/build/
+/export/
+
+# Operating system junk.
+.DS_Store
+Thumbs.db
+desktop.ini
